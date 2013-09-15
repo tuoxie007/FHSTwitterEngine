@@ -591,7 +591,7 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     return [self postTweet:tweetString withImageData:theData inReplyTo:nil];
 }
 
-- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt {
+- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt location:(CLLocationCoordinate2D)location {
     
     if (tweetString.length == 0) {
         return getBadRequestError();
@@ -622,7 +622,7 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     
     NSMutableData *body = [NSMutableData dataWithLength:0];
     [body appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    [body appendData:[@"Content-Disposition: form-data; name=\"media[]\"; filename=\"upload.png\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+    [body appendData:[@"Content-Disposition: form-data; name=\"media[]\"; filename=\"upload.jpg\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
     [body appendData:[@"Content-Type: application/octet-stream\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
     [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
     [body appendData:theData];
@@ -637,6 +637,20 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
         [body appendData:[@"Content-Disposition: form-data; name=\"in_reply_to_status_id\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[[NSString stringWithFormat:@"%@\r\n",irt]dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    }
+    
+    if (location.latitude || location.longitude) {
+        [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[@"Content-Disposition: form-data; name=\"lat\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[[NSString stringWithFormat:@"%g\r\n",location.latitude]dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+        
+        [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[@"Content-Disposition: form-data; name=\"long\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[[NSString stringWithFormat:@"%g\r\n",location.longitude]dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
     }
     
@@ -1598,7 +1612,7 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
 }
 
 // for sending those requests manually, when OAConsumer fails to be useful...
-- (NSError *)manuallySendPOSTRequest:(OAMutableURLRequest *)request {
+- (id)manuallySendPOSTRequest:(OAMutableURLRequest *)request {
     id retobj = [self sendRequest:request];
     
     if (retobj == nil) {
@@ -1626,10 +1640,10 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
         }
     }
     
-    return nil;
+    return parsedJSONResponse;
 }
 
-- (NSError *)sendPOSTRequest:(OAMutableURLRequest *)request withParameters:(NSArray *)params {
+- (id)sendPOSTRequest:(OAMutableURLRequest *)request withParameters:(NSArray *)params {
     
     if (![self isAuthorized]) {
         [self loadAccessToken];

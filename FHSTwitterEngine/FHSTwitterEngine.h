@@ -250,7 +250,7 @@ extern NSString * const FHSProfileDescriptionKey;
 
 // statuses/update_with_media
 - (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData;
-- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt;
+- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt location:(CLLocationCoordinate2D)location;
 
 // statuses/mentions_timeline
 - (id)getMentionsTimelineWithCount:(int)count;
@@ -327,7 +327,7 @@ extern NSString * const FHSProfileDescriptionKey;
 - (void)clearConsumer;
 
 // sendRequest methods, use these for every request
-- (NSError *)sendPOSTRequest:(OAMutableURLRequest *)request withParameters:(NSArray *)params;
+- (id)sendPOSTRequest:(OAMutableURLRequest *)request withParameters:(NSArray *)params;
 - (id)sendGETRequest:(OAMutableURLRequest *)request withParameters:(NSArray *)params;
 
 //
