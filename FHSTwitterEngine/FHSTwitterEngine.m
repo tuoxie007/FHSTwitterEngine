@@ -2103,6 +2103,13 @@ static NSString * const oldPinJS = @"var d = document.getElementById('oauth-pin'
 }
 
 - (void)close {
+    void(^block)(BOOL success) = objc_getAssociatedObject(authBlockKey, "FHSTwitterEngineOAuthCompletion");
+    objc_removeAssociatedObjects(authBlockKey);
+    
+    if (block) {
+        block(NO);
+    }
+    
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
