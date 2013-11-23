@@ -250,7 +250,7 @@ extern NSString * const FHSProfileDescriptionKey;
 
 // statuses/update_with_media
 - (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData;
-- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt location:(CLLocationCoordinate2D)location;
+- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt location:(CLLocation *)location placeId:(NSString *)placeId;
 
 // statuses/mentions_timeline
 - (id)getMentionsTimelineWithCount:(int)count;

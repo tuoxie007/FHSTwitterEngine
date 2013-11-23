@@ -591,18 +591,14 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     return [self postTweet:tweetString withImageData:theData inReplyTo:nil];
 }
 
-- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt location:(CLLocationCoordinate2D)location {
+- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt location:(CLLocation *)location placeId:(NSString *)placeId {
     
     if (tweetString.length == 0) {
         return getBadRequestError();
     }
     
     if (theData.length == 0) {
-        if (irt.length == 0) {
-            return [self postTweet:tweetString];
-        } else {
-            return [self postTweet:tweetString inReplyTo:irt];
-        }
+        return [self postTweet:tweetString inReplyTo:irt location:location placeId:placeId];
     }
 
     NSURL *baseURL = [NSURL URLWithString:url_statuses_update_with_media];
@@ -640,17 +636,23 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
         [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
     }
     
-    if (location.latitude || location.longitude) {
+    if (location.coordinate.latitude || location.coordinate.longitude) {
         [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[@"Content-Disposition: form-data; name=\"lat\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"%g\r\n",location.latitude]dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[[NSString stringWithFormat:@"%g\r\n",location.coordinate.latitude]dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
         
         [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[@"Content-Disposition: form-data; name=\"long\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"%g\r\n",location.longitude]dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[[NSString stringWithFormat:@"%g\r\n",location.coordinate.longitude]dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+        
+        [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[@"Content-Disposition: form-data; name=\"display_coordinates\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[[NSString stringWithFormat:@"%g\r\n",@"true"]dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
     }
     
@@ -1400,7 +1402,12 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     return [self sendGETRequest:request withParameters:params];
 }
 
-- (NSError *)postTweet:(NSString *)tweetString inReplyTo:(NSString *)inReplyToString {
+- (NSError *)postTweet:(NSString *)tweetString inReplyTo:(NSString *)inReplyToString
+{
+    return [self postTweet:tweetString inReplyTo:inReplyToString location:nil placeId:nil];
+}
+
+- (NSError *)postTweet:(NSString *)tweetString inReplyTo:(NSString *)inReplyToString location:(CLLocation *)location placeId:(NSString *)placeId{
     
     if (tweetString.length == 0) {
         return getBadRequestError();
@@ -1414,6 +1421,12 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     
     if (inReplyToString.length > 0) {
         [params addObject:[OARequestParameter requestParameterWithName:@"in_reply_to_status_id" value:inReplyToString]];
+    }
+    
+    if (location) {
+        [params addObject:[OARequestParameter requestParameterWithName:@"lat" value:[@(location.coordinate.latitude) description]]];
+        [params addObject:[OARequestParameter requestParameterWithName:@"long" value:[@(location.coordinate.longitude) description]]];
+        [params addObject:[OARequestParameter requestParameterWithName:@"display_coordinates" value:@"true"]];
     }
     
     return [self sendPOSTRequest:request withParameters:params];
