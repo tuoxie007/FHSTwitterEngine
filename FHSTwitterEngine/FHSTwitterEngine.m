@@ -591,7 +591,7 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     return [self postTweet:tweetString withImageData:theData inReplyTo:nil];
 }
 
-- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt location:(CLLocationCoordinate2D)location {
+- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt location:(CLLocationCoordinate2D)location placeId:(NSString *)placeId {
     
     if (tweetString.length == 0) {
         return getBadRequestError();
@@ -651,6 +651,14 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
         [body appendData:[@"Content-Disposition: form-data; name=\"long\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[[NSString stringWithFormat:@"%g\r\n",location.longitude]dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    }
+    
+    if (placeId) {
+        [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[@"Content-Disposition: form-data; name=\"place_id\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[[NSString stringWithFormat:@"%g\r\n",placeId]dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
     }
     
