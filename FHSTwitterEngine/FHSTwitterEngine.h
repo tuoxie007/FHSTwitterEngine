@@ -52,6 +52,7 @@
 
 
 #import <Foundation/Foundation.h>
+#import <CoreLocation/CoreLocation.h>
 
 // These are for the dispatch_async() calls that you use to get around the synchronous-ness
 #define GCDBackgroundThread dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)
