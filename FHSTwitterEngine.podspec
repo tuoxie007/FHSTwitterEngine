@@ -9,6 +9,6 @@ Pod::Spec.new do |s|
   s.source   = { :git => 'https://github.com/tuoxie007/FHSTwitterEngine.git', :tag => s.version.to_s }
   s.description = 'The synchronous Twitter engine that doesn’t suck!! USE THE MASTER BRANCH'
   s.source_files = ['FHSTwitterEngine/*.{h,m}', 'FHSTwitterEngine/OAuthConsumer/**/*.{h,m}']
-  s.framework    = ['Foundation', 'UIKit', 'CoreGraphics', 'SystemConfiguration']
+  s.framework    = ['Foundation', 'UIKit', 'CoreGraphics', 'SystemConfiguration', 'CoreLocation']
   s.requires_arc = false 
 end
