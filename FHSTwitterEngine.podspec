@@ -12,6 +12,6 @@ Pod::Spec.new do |s|
   s.framework    = ['Foundation', 'UIKit', 'CoreGraphics', 'SystemConfiguration']
   s.requires_arc = false 
   s.subspec 'OAuthConsumer' do |oa|
-    sp.source_files = 'FHSTwitterEngine/OAuthConsumer/**/*.{h,m}'
+    s.source_files = 'FHSTwitterEngine/OAuthConsumer/**/*.{h,m}'
   end
 end
