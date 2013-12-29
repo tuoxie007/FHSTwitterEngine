@@ -588,7 +588,7 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
 }
 
 - (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData {
-    return [self postTweet:tweetString withImageData:theData inReplyTo:nil];
+    return [self postTweet:tweetString withImageData:theData inReplyTo:nil location:nil placeId:nil];
 }
 
 - (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt location:(CLLocation *)location placeId:(NSString *)placeId {
@@ -652,7 +652,7 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
         [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[@"Content-Disposition: form-data; name=\"display_coordinates\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"%g\r\n",@"true"]dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[[NSString stringWithFormat:@"%@\r\n",@"true"]dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
     }
     
@@ -660,7 +660,7 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
         [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[@"Content-Disposition: form-data; name=\"place_id\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"%g\r\n",placeId]dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[[NSString stringWithFormat:@"%@\r\n",placeId]dataUsingEncoding:NSUTF8StringEncoding]];
         [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
     }
     
