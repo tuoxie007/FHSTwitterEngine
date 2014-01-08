@@ -208,6 +208,7 @@ static NSString * const url_account_update_profile_background_image = @"https://
 static NSString * const url_account_update_profile_image = @"https://api.twitter.com/1.1/account/update_profile_image.json";
 static NSString * const url_account_settings = @"https://api.twitter.com/1.1/account/settings.json";
 static NSString * const url_account_update_profile = @"https://api.twitter.com/1.1/account/update_profile.json";
+static NSString * const url_account_update_profile_banner = @"https://api.twitter.com/1.1/account/update_profile_banner.json";
 
 static NSString * const url_favorites_list = @"https://api.twitter.com/1.1/favorites/list.json";
 static NSString * const url_favorites_create = @"https://api.twitter.com/1.1/favorites/create.json";
@@ -1192,6 +1193,21 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:skipStatus, useImage, nil]];
 }
 
+- (NSError *)setBannerImageWithImageData:(NSData *)data {
+    if (data.length == 0) {
+        return getBadRequestError();
+    }
+    
+    if (data.length >= 800000) {
+        return [NSError errorWithDomain:@"The image you are trying to upload is too large." code:422 userInfo:nil];
+    }
+    
+    NSURL *baseURL = [NSURL URLWithString:url_account_update_profile_banner];
+    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
+    OARequestParameter *image = [OARequestParameter requestParameterWithName:@"banner" value:[data base64EncodingWithLineLength:0]];
+    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:image, nil]];
+}
+
 - (NSError *)setProfileBackgroundImageWithImageData:(NSData *)data tiled:(BOOL)isTiled {
     if (data.length == 0) {
         return getBadRequestError();
@@ -1946,15 +1962,19 @@ static NSString * const oldPinJS = @"var d = document.getElementById('oauth-pin'
     self.view.backgroundColor = [UIColor grayColor];
     self.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     
-    self.theWebView = [[[UIWebView alloc]initWithFrame:CGRectMake(0, 44, 320, 416)]autorelease];
+    if (MIN([[UIDevice currentDevice].systemVersion floatValue], __IPHONE_OS_VERSION_MAX_ALLOWED/10000.0) >= 7) {
+        self.navBar = [[[UINavigationBar alloc]initWithFrame:CGRectMake(0, 0, 320, 64)]autorelease];
+    } else {
+        self.navBar = [[[UINavigationBar alloc]initWithFrame:CGRectMake(0, 0, 320, 44)]autorelease];
+    }
+    _navBar.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin;
+    
+    self.theWebView = [[[UIWebView alloc]initWithFrame:CGRectMake(0, self.navBar.frame.size.height, 320, 416)]autorelease];
     _theWebView.hidden = YES;
     _theWebView.delegate = self;
     _theWebView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _theWebView.dataDetectorTypes = UIDataDetectorTypeNone;
     _theWebView.backgroundColor = [UIColor darkGrayColor];
-    
-    self.navBar = [[[UINavigationBar alloc]initWithFrame:CGRectMake(0, 0, 320, 44)]autorelease];
-    _navBar.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin;
 	
 	[self.view addSubview:_theWebView];
 	[self.view addSubview:_navBar];
@@ -2092,6 +2112,8 @@ static NSString * const oldPinJS = @"var d = document.getElementById('oauth-pin'
     
 	_pinCopyBar.center = CGPointMake(_pinCopyBar.bounds.size.width/2, _pinCopyBar.bounds.size.height/2);
 	[self.view insertSubview:_pinCopyBar belowSubview:_navBar];
+    
+    _theWebView.frame = CGRectMake(0, _theWebView.frame.origin.y + _pinCopyBar.frame.size.height, _theWebView.frame.size.width, _theWebView.frame.size.height-_pinCopyBar.frame.size.height);
 	
 	[UIView beginAnimations:nil context:nil];
     _pinCopyBar.center = CGPointMake(_pinCopyBar.bounds.size.width/2, _navBar.bounds.size.height+_pinCopyBar.bounds.size.height/2);

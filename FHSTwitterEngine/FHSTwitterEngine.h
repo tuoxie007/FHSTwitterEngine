@@ -151,6 +151,7 @@ extern NSString * const FHSProfileDescriptionKey;
 - (NSError *)setProfileBackgroundImageWithImageData:(NSData *)data tiled:(BOOL)isTiled;
 - (NSError *)setProfileBackgroundImageWithImageAtPath:(NSString *)file tiled:(BOOL)isTiled;
 - (NSError *)setUseProfileBackgroundImage:(BOOL)shouldUseProfileBackgroundImage;
+- (NSError *)setBannerImageWithImageData:(NSData *)data;
 
 // account/update_profile_colors
 // See FHSTwitterEngine.m for details
