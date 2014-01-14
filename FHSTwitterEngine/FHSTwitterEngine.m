@@ -32,6 +32,7 @@
 #import <netinet/in.h>
 #import <ifaddrs.h>
 #import <objc/runtime.h>
+#import <AFNetworking/AFNetworking.h>
 
 NSString * const FHSProfileBackgroundColorKey = @"profile_background_color";
 NSString * const FHSProfileLinkColorKey = @"profile_link_color";
@@ -222,384 +223,54 @@ static NSString * const url_followers_list = @"https://api.twitter.com/1.1/follo
 static NSString * const url_friends_ids = @"https://api.twitter.com/1.1/friends/ids.json";
 static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends/list.json";
 
-- (id)listFollowersForUser:(NSString *)user isID:(BOOL)isID withCursor:(NSString *)cursor {
-    
-    if (user.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_friends_list];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *skipstatusP = [OARequestParameter requestParameterWithName:@"skip_status" value:@"true"];
-    OARequestParameter *include_entitiesP = [OARequestParameter requestParameterWithName:@"include_entities" value:self.includeEntities?@"true":@"false"];
-    OARequestParameter *screen_nameP = [OARequestParameter requestParameterWithName:isID?@"user_id":@"screen_name" value:user];
-    OARequestParameter *cursorP = [OARequestParameter requestParameterWithName:@"cursor" value:cursor];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:include_entitiesP, skipstatusP, screen_nameP, cursorP, nil]];
-}
-
-- (id)listFriendsForUser:(NSString *)user isID:(BOOL)isID withCursor:(NSString *)cursor {
-    
-    if (user.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_friends_list];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *skipstatusP = [OARequestParameter requestParameterWithName:@"skip_status" value:@"true"];
-    OARequestParameter *include_entitiesP = [OARequestParameter requestParameterWithName:@"include_entities" value:self.includeEntities?@"true":@"false"];
-    OARequestParameter *screen_nameP = [OARequestParameter requestParameterWithName:isID?@"user_id":@"screen_name" value:user];
-    OARequestParameter *cursorP = [OARequestParameter requestParameterWithName:@"cursor" value:cursor];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:include_entitiesP, skipstatusP, screen_nameP, cursorP, nil]];
-}
-
-- (id)searchUsersWithQuery:(NSString *)q andCount:(int)count {
-    
-    if (count == 0) {
-        return nil;
-    }
-    
-    if (q.length == 0) {
-        return getBadRequestError();
-    }
-    
-    if (q.length > 1000) {
-        q = [q substringToIndex:1000];
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_users_search];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *include_entitiesP = [OARequestParameter requestParameterWithName:@"include_entities" value:self.includeEntities?@"true":@"false"];
-    OARequestParameter *countP = [OARequestParameter requestParameterWithName:@"count" value:[NSString stringWithFormat:@"%d",count]];
-    OARequestParameter *qP = [OARequestParameter requestParameterWithName:@"q" value:q];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:include_entitiesP, countP, qP, nil]];
-}
-
-- (id)searchTweetsWithQuery:(NSString *)q count:(int)count resultType:(FHSTwitterEngineResultType)resultType unil:(NSDate *)untilDate sinceID:(NSString *)sinceID maxID:(NSString *)maxID {
-    
-    if (count == 0) {
-        return nil;
-    }
-    
-    if (q.length == 0) {
-        return getBadRequestError();
-    }
-    
-    if (q.length > 1000) {
-        q = [q substringToIndex:1000];
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_search_tweets];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *include_entitiesP = [OARequestParameter requestParameterWithName:@"include_entities" value:self.includeEntities?@"true":@"false"];
-    OARequestParameter *countP = [OARequestParameter requestParameterWithName:@"count" value:[NSString stringWithFormat:@"%d",count]];
-    OARequestParameter *untilP = [OARequestParameter requestParameterWithName:@"until" value:nil];
-    OARequestParameter *result_typeP = [OARequestParameter requestParameterWithName:@"result_type" value:nil];
-    OARequestParameter *qP = [OARequestParameter requestParameterWithName:@"q" value:q];
-    
-    [self.dateFormatter setDateFormat:@"YYYY-MM-DD"];
-    NSString *untilString = [self.dateFormatter stringFromDate:untilDate];
-    [self.dateFormatter setDateFormat:@"EEE MMM dd HH:mm:ss ZZZZ yyyy"];
-    
-    untilP.value = untilString;
-
-    if (resultType == FHSTwitterEngineResultTypeMixed) {
-        result_typeP.value = @"mixed";
-    } else if (resultType == FHSTwitterEngineResultTypeRecent) {
-        result_typeP.value = @"recent";
-    } else if (resultType == FHSTwitterEngineResultTypePopular) {
-        result_typeP.value = @"popular";
-    }
-    
-    NSMutableArray *params = [NSMutableArray arrayWithObjects:countP, include_entitiesP, qP, nil];
-    
-    if (maxID.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"max_id" value:maxID]];
-    }
-    
-    if (sinceID.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"since_id" value:sinceID]];
-    }
-    
-    return [self sendGETRequest:request withParameters:params];
-}
-
-- (NSError *)createListWithName:(NSString *)name isPrivate:(BOOL)isPrivate description:(NSString *)description {
-    
-    if (name.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_lists_create];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *nameP = [OARequestParameter requestParameterWithName:@"name" value:name];
-    OARequestParameter *isPrivateP = [OARequestParameter requestParameterWithName:@"mode" value:isPrivate?@"private":@"public"];
-    
-    NSMutableArray *params = [NSMutableArray arrayWithObjects:nameP, isPrivateP, nil];
-    
-    if (description.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"description" value:description]];
-    }
-    
-    return [self sendPOSTRequest:request withParameters:params];
-}
-
-- (id)getListWithID:(NSString *)listID {
-    
-    if (listID.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_lists_show];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *listIDP = [OARequestParameter requestParameterWithName:@"list_id" value:listID];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:listIDP, nil]];
-}
-
-- (NSError *)changeDescriptionOfListWithID:(NSString *)listID toDescription:(NSString *)newName {
-    
-    if (listID.length == 0) {
-        return getBadRequestError();
-    }
-    
-    if (newName.length == 0 ) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_lists_update];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *listIDP = [OARequestParameter requestParameterWithName:@"list_id" value:listID];
-    OARequestParameter *nameP = [OARequestParameter requestParameterWithName:@"description" value:newName];
-    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:listIDP, nameP, nil]];
-}
-
-- (NSError *)changeNameOfListWithID:(NSString *)listID toName:(NSString *)newName {
-    
-    if (listID.length == 0) {
-        return getBadRequestError();
-    }
-    
-    if (newName.length == 0 ) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_lists_update];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *listIDP = [OARequestParameter requestParameterWithName:@"list_id" value:listID];
-    OARequestParameter *nameP = [OARequestParameter requestParameterWithName:@"name" value:newName];
-    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:listIDP, nameP, nil]];
-}
-
-- (NSError *)setModeOfListWithID:(NSString *)listID toPrivate:(BOOL)isPrivate {
-    
-    if (listID.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_lists_update];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *listIDP = [OARequestParameter requestParameterWithName:@"list_id" value:listID];
-    OARequestParameter *isPrivateP = [OARequestParameter requestParameterWithName:@"mode" value:isPrivate?@"private":@"public"];
-    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:listIDP, isPrivateP, nil]];
-}
-
-- (id)listUsersInListWithID:(NSString *)listID {
-    
-    if (listID.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_lists_members];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *listIDP = [OARequestParameter requestParameterWithName:@"list_id" value:listID];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:listIDP, nil]];
-}
-
-- (NSError *)removeUsersFromListWithID:(NSString *)listID users:(NSArray *)users {
-    
-    if (users.count == 0) {
-        return getBadRequestError();
-    }
-    
-    if (users.count > 100) {
-        return getBadRequestError();
-    }
-    
-    if (listID.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_lists_members_destroy_all];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *screen_name = [OARequestParameter requestParameterWithName:@"screen_name" value:[users componentsJoinedByString:@","]];
-    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:screen_name, nil]];
-}
-
-- (NSError *)addUsersToListWithID:(NSString *)listID users:(NSArray *)users {
-    
-    if (users.count == 0) {
-        return getBadRequestError();
-    }
-    
-    if (users.count > 100) {
-        return getBadRequestError();
-    }
-    
-    if (listID.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_lists_members_create_all];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *screen_name = [OARequestParameter requestParameterWithName:@"screen_name" value:[users componentsJoinedByString:@","]];
-    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:screen_name, nil]];
-}
-
-- (id)getTimelineForListWithID:(NSString *)listID count:(int)count {
-    return [self getTimelineForListWithID:listID count:count sinceID:nil maxID:nil];
-}
-
-- (id)getTimelineForListWithID:(NSString *)listID count:(int)count sinceID:(NSString *)sinceID maxID:(NSString *)maxID {
-    return [self getTimelineForListWithID:listID count:count sinceID:sinceID maxID:maxID excludeRetweets:YES excludeReplies:YES];
-}
-
-- (id)getTimelineForListWithID:(NSString *)listID count:(int)count excludeRetweets:(BOOL)excludeRetweets excludeReplies:(BOOL)excludeReplies {
-    return [self getTimelineForListWithID:listID count:count sinceID:nil maxID:nil excludeRetweets:excludeRetweets excludeReplies:excludeReplies];
-}
-
-- (id)getTimelineForListWithID:(NSString *)listID count:(int)count sinceID:(NSString *)sinceID maxID:(NSString *)maxID excludeRetweets:(BOOL)excludeRetweets excludeReplies:(BOOL)excludeReplies {
-    
-    if (count == 0) {
-        return nil;
-    }
-    
-    if (listID.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_lists_statuses];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *countP = [OARequestParameter requestParameterWithName:@"count" value:[NSString stringWithFormat:@"%d",count]];
-    OARequestParameter *excludeRepliesP = [OARequestParameter requestParameterWithName:@"exclude_replies" value:excludeReplies?@"true":@"false"];
-    OARequestParameter *includeRTsP = [OARequestParameter requestParameterWithName:@"include_rts" value:excludeRetweets?@"false":@"true"];
-    OARequestParameter *listIDP = [OARequestParameter requestParameterWithName:@"list_id" value:listID];
-    
-    NSMutableArray *params = [NSMutableArray arrayWithObjects:countP, excludeRepliesP, includeRTsP, listIDP, nil];
-    
-    if (sinceID.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"since_id" value:sinceID]];
-    }
-    
-    if (maxID.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"max_id" value:maxID]];
-    }
-    
-    return [self sendGETRequest:request withParameters:params];
-}
-
-- (id)getListsForUser:(NSString *)user isID:(BOOL)isID {
-    
-    if (user.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_lists_list];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *userP = [OARequestParameter requestParameterWithName:isID?@"user_id":@"screen_name" value:user];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:userP, nil]];
-}
-
-- (id)getRetweetsForTweet:(NSString *)identifier count:(int)count {
-    
-    if (count == 0) {
-        return nil;
-    }
-    
-    if (identifier.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:[NSString stringWithFormat:@"https://api.twitter.com/1.1/statuses/retweets/%@.json",identifier]];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *identifierP = [OARequestParameter requestParameterWithName:@"count" value:[NSString stringWithFormat:@"%d",count]];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:identifierP, nil]];
-}
-
-- (id)getRetweetedTimelineWithCount:(int)count {
-    return [self getRetweetedTimelineWithCount:count sinceID:nil maxID:nil];
-}
-
-- (id)getRetweetedTimelineWithCount:(int)count sinceID:(NSString *)sinceID maxID:(NSString *)maxID {
-    
-    if (count == 0) {
-        return nil;
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_statuses_retweets_of_me];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *countP = [OARequestParameter requestParameterWithName:@"count" value:[NSString stringWithFormat:@"%d",count]];
-    OARequestParameter *excludeRepliesP = [OARequestParameter requestParameterWithName:@"exclude_replies" value:@"false"];
-    OARequestParameter *includeRTsP = [OARequestParameter requestParameterWithName:@"include_rts" value:@"true"];
-    
-    NSMutableArray *params = [NSMutableArray array];
-    [params addObject:countP];
-    [params addObject:excludeRepliesP];
-    [params addObject:includeRTsP];
-    
-    if (sinceID.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"since_id" value:sinceID]];
-    }
-    
-    if (maxID.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"max_id" value:maxID]];
-    }
-    
-    return [self sendGETRequest:request withParameters:params];
-}
-
-- (id)getMentionsTimelineWithCount:(int)count {
-    return [self getMentionsTimelineWithCount:count sinceID:nil maxID:nil];
-}
-
-- (id)getMentionsTimelineWithCount:(int)count sinceID:(NSString *)sinceID maxID:(NSString *)maxID {
-    
-    if (count == 0) {
-        return nil;
-    }
-
-    NSURL *baseURL = [NSURL URLWithString:url_statuses_metions_timeline];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *countP = [OARequestParameter requestParameterWithName:@"count" value:[NSString stringWithFormat:@"%d",count]];
-    OARequestParameter *excludeRepliesP = [OARequestParameter requestParameterWithName:@"exclude_replies" value:@"false"];
-    OARequestParameter *includeRTsP = [OARequestParameter requestParameterWithName:@"include_rts" value:@"true"];
-
-    NSMutableArray *params = [NSMutableArray array];
-    [params addObject:countP];
-    [params addObject:excludeRepliesP];
-    [params addObject:includeRTsP];
-    
-    if (sinceID.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"since_id" value:sinceID]];
-    }
-    
-    if (maxID.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"max_id" value:maxID]];
-    }
-    
-    return [self sendGETRequest:request withParameters:params];
-}
-
-- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData {
-    return [self postTweet:tweetString withImageData:theData inReplyTo:nil location:nil placeId:nil];
-}
-
-- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt location:(CLLocation *)location placeId:(NSString *)placeId {
-    
+- (void)postTweet:(NSString *)tweetString
+        inReplyTo:(NSString *)inReplyToString
+         location:(CLLocation *)location
+          placeId:(NSString *)placeId
+          success:(void (^)(id responseObj))success
+          failure:(void (^)(NSError *error))failure
+         progress:(void (^)(double progress))progress
+{
     if (tweetString.length == 0) {
-        return getBadRequestError();
+        failure(getBadRequestError());
+    }
+    
+    NSURL *baseURL = [NSURL URLWithString:url_statuses_update];
+    OARequestParameter *status = [OARequestParameter requestParameterWithName:@"status" value:[tweetString fhs_trimForTwitter]];
+    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
+    
+    NSMutableArray *params = [NSMutableArray arrayWithObjects:status, nil];
+    
+    if (inReplyToString.length > 0) {
+        [params addObject:[OARequestParameter requestParameterWithName:@"in_reply_to_status_id" value:inReplyToString]];
+    }
+    
+    if (location) {
+        [params addObject:[OARequestParameter requestParameterWithName:@"lat" value:[@(location.coordinate.latitude) description]]];
+        [params addObject:[OARequestParameter requestParameterWithName:@"long" value:[@(location.coordinate.longitude) description]]];
+        [params addObject:[OARequestParameter requestParameterWithName:@"display_coordinates" value:@"true"]];
+    }
+    
+    [self sendPOSTRequest:request withParameters:params success:success failure:failure progress:progress];
+}
+
+- (void)postTweet:(NSString *)tweetString
+    withImageData:(NSData *)theData
+        inReplyTo:(NSString *)irt
+         location:(CLLocation *)location
+          placeId:(NSString *)placeId
+          success:(void (^)(id responseObj))success
+          failure:(void (^)(NSError *error))failure
+         progress:(void (^)(double progress))progress
+{
+    if (tweetString.length == 0 && theData.length == 0) {
+        failure(getBadRequestError());
+        return;
     }
     
     if (theData.length == 0) {
-        return [self postTweet:tweetString inReplyTo:irt location:location placeId:placeId];
+        [self postTweet:tweetString inReplyTo:irt location:location placeId:placeId success:success failure:failure progress:progress];
+        return;
     }
 
     NSURL *baseURL = [NSURL URLWithString:url_statuses_update_with_media];
@@ -668,521 +339,7 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     [request prepare];
     [request setHTTPBody:body];
     
-    return [self manuallySendPOSTRequest:request];
-}
-
-- (NSError *)destroyTweet:(NSString *)identifier {
-    
-    if (identifier.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_statuses_destroy];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *identifierP = [OARequestParameter requestParameterWithName:@"id" value:identifier];
-    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:identifierP, nil]];
-}
-
-- (id)getDetailsForTweet:(NSString *)identifier {
-    
-    if (identifier.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_statuses_show];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *identifierP = [OARequestParameter requestParameterWithName:@"id" value:identifier];
-    OARequestParameter *includeMyRetweet = [OARequestParameter requestParameterWithName:@"include_my_retweet" value:@"true"];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:includeMyRetweet, identifierP, nil]];
-}
-
-- (id)oembedTweet:(NSString *)identifier maxWidth:(float)maxWidth alignmentMode:(FHSTwitterEngineAlignMode)alignmentMode {
-    
-    if (identifier.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSString *language = [[NSLocale preferredLanguages]objectAtIndex:0];
-    NSString *alignment = [[NSArray arrayWithObjects:@"left", @"right", @"center", @"none", nil]objectAtIndex:alignmentMode];
-    
-    NSURL *baseURL = [NSURL URLWithString:url_statuses_oembed];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *identifierP = [OARequestParameter requestParameterWithName:@"id" value:identifier];
-    OARequestParameter *maxWidthP = [OARequestParameter requestParameterWithName:@"maxwidth" value:[NSString stringWithFormat:@"%f",maxWidth]];
-    OARequestParameter *languageP= [OARequestParameter requestParameterWithName:@"lang" value:language];
-    OARequestParameter *alignmentP = [OARequestParameter requestParameterWithName:@"align" value:alignment];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:identifierP, maxWidthP, languageP,alignmentP, nil]];
-}
-
-- (NSError *)retweet:(NSString *)identifier {
-    
-    if (identifier.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:[NSString stringWithFormat:@"https://api.twitter.com/1.1/statuses/retweet/%@.json",identifier]];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    return [self sendPOSTRequest:request withParameters:nil];
-}
-
-- (id)getTimelineForUser:(NSString *)user isID:(BOOL)isID count:(int)count {
-    return [self getTimelineForUser:user isID:isID count:count sinceID:nil maxID:nil];
-}
-
-- (id)getTimelineForUser:(NSString *)user isID:(BOOL)isID count:(int)count sinceID:(NSString *)sinceID maxID:(NSString *)maxID {
-    
-    if (count == 0) {
-        return nil;
-    }
-    
-    if (user.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_statuses_user_timeline];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *countP = [OARequestParameter requestParameterWithName:@"count" value:[NSString stringWithFormat:@"%d",count]];
-    OARequestParameter *userP = [OARequestParameter requestParameterWithName:isID?@"user_id":@"screen_name" value:user];
-    OARequestParameter *excludeRepliesP = [OARequestParameter requestParameterWithName:@"exclude_replies" value:@"false"];
-    OARequestParameter *includeRTsP = [OARequestParameter requestParameterWithName:@"include_rts" value:@"true"];
-
-    NSMutableArray *params = [NSMutableArray array];
-    [params addObject:countP];
-    [params addObject:userP];
-    [params addObject:excludeRepliesP];
-    [params addObject:includeRTsP];
-    
-    if (sinceID.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"since_id" value:sinceID]];
-    }
-    
-    if (maxID.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"max_id" value:maxID]];
-    }
-    
-    return [self sendGETRequest:request withParameters:params];
-}
-
-- (id)getProfileImageForUsername:(NSString *)username andSize:(FHSTwitterEngineImageSize)size {
-    
-    if (username.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_users_show];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *usernameP = [OARequestParameter requestParameterWithName:@"screen_name" value:username];
-    
-    NSArray *params = [NSArray arrayWithObjects:usernameP, nil];
-    
-    id userShowReturn = [self sendGETRequest:request withParameters:params];
-    
-    if ([userShowReturn isKindOfClass:[NSError class]]) {
-        return [NSError errorWithDomain:[(NSError *)userShowReturn domain] code:[(NSError *)userShowReturn code] userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]];
-    } else if ([userShowReturn isKindOfClass:[NSDictionary class]]) {
-        NSString *url = [userShowReturn objectForKey:@"profile_image_url"]; // normal
-        
-        if (size == 0) { // mini
-            url = [url stringByReplacingOccurrencesOfString:@"_normal" withString:@"_mini"];
-        } else if (size == 2) { // bigger
-            url = [url stringByReplacingOccurrencesOfString:@"_normal" withString:@"_bigger"];
-        } else if (size == 3) { // original
-            url = [url stringByReplacingOccurrencesOfString:@"_normal" withString:@""];
-        }
-        
-        id ret = [self sendRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:url]]];
-        
-        if ([ret isKindOfClass:[NSData class]]) {
-            return [UIImage imageWithData:(NSData *)ret];
-        }
-
-        return ret;
-    }
-    
-    return [NSError errorWithDomain:@"Bad Request: The request you attempted to make messed up royally." code:400 userInfo:nil];
-}
-
-- (id)authenticatedUserIsBlocking:(NSString *)user isID:(BOOL)isID {
-    
-    if (user.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_blocks_exists];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *userP = [OARequestParameter requestParameterWithName:isID?@"user_id":@"screen_name" value:user];
-    OARequestParameter *skipstatusP = [OARequestParameter requestParameterWithName:@"skip_status" value:@"true"];
-    
-    id obj = [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:skipstatusP, userP, nil]];
-    
-    if ([obj isKindOfClass:[NSError class]]) {
-        return obj;
-    } else if ([obj isKindOfClass:[NSDictionary class]]) {
-        if ([[obj objectForKey:@"error"]isEqualToString:@"You are not blocking this user."]) {
-            return @"NO";
-        } else {
-            return @"YES";
-        }
-    }
-    
-    return getBadRequestError();
-}
-
-- (id)listBlockedUsers {
-    NSURL *baseURL = [NSURL URLWithString:url_blocks_blocking];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *skipstatusP = [OARequestParameter requestParameterWithName:@"skip_status" value:@"true"];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:skipstatusP, nil]];
-}
-
-- (id)listBlockedIDs {
-    NSURL *baseURL = [NSURL URLWithString:url_blocks_blocking_ids];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *stringifyIDsP = [OARequestParameter requestParameterWithName:@"stringify_ids" value:@"true"];
-    
-    id object = [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:stringifyIDsP, nil]];
-    
-    if ([object isKindOfClass:[NSDictionary class]]) {
-        return [(NSDictionary *)object objectForKey:@"ids"];
-    }
-    return object;
-}
-
-- (id)getLanguages {
-    NSURL *baseURL = [NSURL URLWithString:url_help_languages];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    return [self sendGETRequest:request withParameters:nil];
-}
-
-- (id)getConfiguration {
-    NSURL *baseURL = [NSURL URLWithString:url_help_configuration];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    return [self sendGETRequest:request withParameters:nil];
-}
-
-- (NSError *)reportUserAsSpam:(NSString *)user isID:(BOOL)isID {
-    
-    if (user.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_users_report_spam];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *userP = [OARequestParameter requestParameterWithName:isID?@"user_id":@"screen_name" value:user];
-    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:userP, nil]];
-}
-
-- (id)showDirectMessage:(NSString *)messageID {
-    
-    if (messageID.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_direct_messages_show];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *id_ = [OARequestParameter requestParameterWithName:@"id" value:messageID];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:id_, nil]];
-}
-
-- (NSError *)sendDirectMessage:(NSString *)body toUser:(NSString *)user isID:(BOOL)isID {
-    
-    if (user.length == 0) {
-        return getBadRequestError();
-    }
-    
-    if (body.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_direct_messages_new];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *bodyP = [OARequestParameter requestParameterWithName:@"text" value:[body fhs_trimForTwitter]];
-    OARequestParameter *userP = [OARequestParameter requestParameterWithName:isID?@"user_id":@"screen_name" value:user];
-    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:userP, bodyP, nil]];
-}
-
-- (id)getSentDirectMessages:(int)count {
-    
-    if (count == 0) {
-        return nil;
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_direct_messages_sent];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *countP = [OARequestParameter requestParameterWithName:@"count" value:[NSString stringWithFormat:@"%d",count]];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:countP, nil]];
-}
-
-- (NSError *)deleteDirectMessage:(NSString *)messageID {
-    
-    if (messageID.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_direct_messages_destroy];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *identitifierP = [OARequestParameter requestParameterWithName:@"id" value:messageID];
-    OARequestParameter *includeEntitiesP = [OARequestParameter requestParameterWithName:@"include_entities" value:self.includeEntities?@"true":@"false"];
-    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:identitifierP, includeEntitiesP, nil]];
-}
-
-- (id)getDirectMessages:(int)count {
-    
-    if (count == 0) {
-        return nil;
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_direct_messages];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *countP = [OARequestParameter requestParameterWithName:@"count" value:[NSString stringWithFormat:@"%d",count]];
-    OARequestParameter *skipStatusP = [OARequestParameter requestParameterWithName:@"skip_status" value:@"true"];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:countP, skipStatusP, nil]];
-}
-
-- (id)getPrivacyPolicy {
-    NSURL *baseURL = [NSURL URLWithString:url_help_privacy];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    
-    id object = [self sendGETRequest:request withParameters:nil];
-    
-    if ([object isKindOfClass:[NSDictionary class]]) {
-        NSDictionary *dict = (NSDictionary *)object;
-        if ([dict.allKeys containsObject:@"privacy"]) {
-            return [dict objectForKey:@"privacy"];
-        }
-    }
-    return object;
-}
-
-- (id)getTermsOfService {
-    NSURL *baseURL = [NSURL URLWithString:url_help_tos];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    
-    id object = [self sendGETRequest:request withParameters:nil];
-    
-    if ([object isKindOfClass:[NSDictionary class]]) {
-        NSDictionary *dict = (NSDictionary *)object;
-        if ([dict.allKeys containsObject:@"tos"]) {
-            return [dict objectForKey:@"tos"];
-        }
-    }
-    return object;
-}
-
-- (id)getNoRetweetIDs {
-    NSURL *baseURL = [NSURL URLWithString:url_friendships_no_retweets_ids];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *stringifyIDsP = [OARequestParameter requestParameterWithName:@"stringify_ids" value:@"true"];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:stringifyIDsP, nil]];
-}
-
-- (NSError *)enableRetweets:(BOOL)enableRTs andDeviceNotifs:(BOOL)devNotifs forUser:(NSString *)user isID:(BOOL)isID {
-    
-    if (user.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_friendships_update];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *userP = [OARequestParameter requestParameterWithName:isID?@"user_id":@"screen_name" value:user];
-    OARequestParameter *retweetsP = [OARequestParameter requestParameterWithName:@"retweets" value:enableRTs?@"true":@"false"];
-    OARequestParameter *deviceP = [OARequestParameter requestParameterWithName:@"device" value:devNotifs?@"true":@"false"];
-    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:userP, retweetsP, deviceP, nil]];
-}
-
-- (id)getPendingOutgoingFollowers {
-    NSURL *baseURL = [NSURL URLWithString:url_friendships_outgoing];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *stringifyIDsP = [OARequestParameter requestParameterWithName:@"stringify_ids" value:@"true"];
-    
-    id object = [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:stringifyIDsP, nil]];
-    
-    if ([object isKindOfClass:[NSDictionary class]]) {
-        NSDictionary *dict = (NSDictionary *)object;
-        if ([dict.allKeys containsObject:@"ids"]) {
-            return [dict objectForKey:@"ids"];
-        }
-    }
-    return object;
-}
-
-- (id)getPendingIncomingFollowers {
-    NSURL *baseURL = [NSURL URLWithString:url_friendships_incoming];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *stringifyIDsP = [OARequestParameter requestParameterWithName:@"stringify_ids" value:@"true"];
-    
-    id object = [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:stringifyIDsP, nil]];
-    
-    if ([object isKindOfClass:[NSDictionary class]]) {
-        NSDictionary *dict = (NSDictionary *)object;
-        if ([dict.allKeys containsObject:@"ids"]) {
-            return [dict objectForKey:@"ids"];
-        }
-    }
-    return object;
-}
-
-- (id)lookupFriendshipStatusForUsers:(NSArray *)users areIDs:(BOOL)areIDs {
-    
-    if (users.count == 0) {
-        return nil;
-    }
-    
-    NSMutableArray *returnedDictionaries = [NSMutableArray array];
-    NSArray *reqStrings = [self generateRequestStringsFromArray:users];
-    
-    NSURL *baseURL = [NSURL URLWithString:url_friendships_lookup];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    
-    for (NSString *reqString in reqStrings) {
-        OARequestParameter *userP = [OARequestParameter requestParameterWithName:areIDs?@"user_id":@"screen_name" value:reqString];
-        
-        id retObj = [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:userP, nil]];
-        
-        if ([retObj isKindOfClass:[NSArray class]]) {
-            [returnedDictionaries addObjectsFromArray:(NSArray *)retObj];
-        } else if ([retObj isKindOfClass:[NSError class]]) {
-            return retObj;
-        }
-    }
-    return returnedDictionaries;
-}
-
-- (NSError *)unfollowUser:(NSString *)user isID:(BOOL)isID {
-    
-    if (user.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_friendships_destroy];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *userP = [OARequestParameter requestParameterWithName:isID?@"user_id":@"screen_name" value:user];
-    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:userP, nil]];
-}
-
-- (NSError *)followUser:(NSString *)user isID:(BOOL)isID {
-    
-    if (user.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_friendships_create];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *userP = [OARequestParameter requestParameterWithName:isID?@"user_id":@"screen_name" value:user];
-    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:userP, nil]];
-}
-
-- (id)verifyCredentials {
-    NSURL *baseURL = [NSURL URLWithString:url_account_verify_credentials];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    return [self sendGETRequest:request withParameters:nil];
-}
-
-- (id)getFavoritesForUser:(NSString *)user isID:(BOOL)isID andCount:(int)count {
-    return [self getFavoritesForUser:user isID:isID andCount:count sinceID:nil maxID:nil];
-}
-
-- (id)getFavoritesForUser:(NSString *)user isID:(BOOL)isID andCount:(int)count sinceID:(NSString *)sinceID maxID:(NSString *)maxID {
-    if (count == 0) {
-        return nil;
-    }
-    
-    if (user.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_favorites_list];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *countP = [OARequestParameter requestParameterWithName:@"count" value:[NSString stringWithFormat:@"%d",count]];
-    OARequestParameter *userP = [OARequestParameter requestParameterWithName:isID?@"user_id":@"screen_name" value:user];
-    OARequestParameter *includeEntitiesP = [OARequestParameter requestParameterWithName:@"include_entities" value:self.includeEntities?@"true":@"false"];
-    
-    NSMutableArray *params = [NSMutableArray arrayWithObjects:countP, userP, includeEntitiesP, nil];
-    
-    if (sinceID.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"since_id" value:sinceID]];
-    }
-    
-    if (maxID.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"max_id" value:maxID]];
-    }
-    
-    return [self sendGETRequest:request withParameters:params];
-}
-
-- (NSError *)markTweet:(NSString *)tweetID asFavorite:(BOOL)flag {
-    
-    if (tweetID.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:flag?url_favorites_create:url_favorites_destroy];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *idP = [OARequestParameter requestParameterWithName:@"id" value:tweetID];
-    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:idP, nil]];
-}
-
-- (id)getRateLimitStatus {
-    NSURL *baseURL = [NSURL URLWithString:url_application_rate_limit_status];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    return [self sendGETRequest:request withParameters:nil];
-}
-
-- (NSError *)updateProfileColorsWithDictionary:(NSDictionary *)dictionary {
-    
-    // profile_background_color - hex color
-    // profile_link_color - hex color
-    // profile_sidebar_border_color - hex color
-    // profile_sidebar_fill_color - hex color
-    // profile_text_color - hex color
-    
-    NSString *profile_background_color = nil;
-    NSString *profile_link_color = nil;
-    NSString *profile_sidebar_border_color = nil;
-    NSString *profile_sidebar_fill_color = nil;
-    NSString *profile_text_color = nil;
-    
-    if (!dictionary) {
-        profile_background_color = @"C0DEED";
-        profile_link_color = @"0084B4";
-        profile_sidebar_border_color = @"C0DEED";
-        profile_sidebar_fill_color = @"DDEEF6";
-        profile_text_color = @"333333";
-    } else {
-        profile_background_color = [dictionary objectForKey:FHSProfileBackgroundColorKey];
-        profile_link_color = [dictionary objectForKey:FHSProfileLinkColorKey];
-        profile_sidebar_border_color = [dictionary objectForKey:FHSProfileSidebarBorderColorKey];
-        profile_sidebar_fill_color = [dictionary objectForKey:FHSProfileSidebarFillColorKey];
-        profile_text_color = [dictionary objectForKey:FHSProfileTextColorKey];
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_account_update_profile_colors];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *skipStatus = [OARequestParameter requestParameterWithName:@"skip_status" value:@"true"];
-    
-    NSMutableArray *params = [NSMutableArray arrayWithObjects:skipStatus, nil];
-    
-    if (profile_background_color.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"profile_background_color" value:profile_background_color]];
-    }
-    
-    if (profile_link_color.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"profile_link_color" value:profile_link_color]];
-    }
-    
-    if (profile_sidebar_border_color.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"profile_sidebar_border_color" value:profile_sidebar_border_color]];
-    }
-    
-    if (profile_sidebar_fill_color.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"profile_sidebar_fill_color" value:profile_sidebar_fill_color]];
-    }
-    
-    if (profile_text_color.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"profile_text_color" value:profile_text_color]];
-    }
-    
-    return [self sendPOSTRequest:request withParameters:params];
+    [self sendRequest:request success:success failure:failure progress:progress];
 }
 
 - (NSError *)setUseProfileBackgroundImage:(BOOL)shouldUseBGImg {
@@ -1250,12 +407,6 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     return [self setProfileImageWithImageData:[NSData dataWithContentsOfFile:file]];
 }
 
-- (id)getUserSettings {
-    NSURL *baseURL = [NSURL URLWithString:url_account_settings];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    return [self sendGETRequest:request withParameters:nil];
-}
-
 - (NSError *)updateUserProfileWithDictionary:(NSDictionary *)settings {
     
     if (!settings) {
@@ -1300,94 +451,6 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     return [self sendPOSTRequest:request withParameters:params];
 }
 
-- (NSError *)updateSettingsWithDictionary:(NSDictionary *)settings {
-    
-    if (!settings) {
-        return getBadRequestError();
-    }
-    
-    // Dictionary with keys:
-    // All strings... You could have guessed that.
-    // sleep_time_enabled - true/false
-    // start_sleep_time - UTC time
-    // end_sleep_time - UTC time
-    // time_zone - Europe/Copenhagen, Pacific/Tongatapu
-    // lang - en, it, es
-    
-    NSString *sleep_time_enabled = [settings objectForKey:@"sleep_time_enabled"];
-    NSString *start_sleep_time = [settings objectForKey:@"start_sleep_time"];
-    NSString *end_sleep_time = [settings objectForKey:@"end_sleep_time"];
-    NSString *time_zone = [settings objectForKey:@"time_zone"];
-    NSString *lang = [settings objectForKey:@"lang"];
-    
-    NSURL *baseURL = [NSURL URLWithString:url_account_settings];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    
-    NSMutableArray *params = [NSMutableArray array];
-    
-    if (sleep_time_enabled.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"sleep_time_enabled" value:sleep_time_enabled]];
-    }
-    
-    if (start_sleep_time.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"start_sleep_time" value:start_sleep_time]];
-    }
-    
-    if (end_sleep_time.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"end_sleep_time" value:end_sleep_time]];
-    }
-    
-    if (time_zone.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"time_zone" value:time_zone]];
-    }
-    
-    if (lang.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"lang" value:lang]];
-    }
-    
-    return [self sendPOSTRequest:request withParameters:params];
-}
-
-- (id)lookupUsers:(NSArray *)users areIDs:(BOOL)areIDs {
-    
-    if (users.count == 0) {
-        return nil;
-    }
-    
-    if (users.count > 100) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_users_lookup];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *usernames = [OARequestParameter requestParameterWithName:areIDs?@"user_id":@"screen_name" value:[users componentsJoinedByString:@","]];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:usernames, nil]];
-}
-
-- (NSError *)unblock:(NSString *)username {
-
-    if (username.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_blocks_destroy];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *usernameP = [OARequestParameter requestParameterWithName:@"screen_name" value:username];
-    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:usernameP, nil]];
-}
-
-- (NSError *)block:(NSString *)username {
-    
-    if (username.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_blocks_create];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *usernameP = [OARequestParameter requestParameterWithName:@"screen_name" value:username];
-    return [self sendPOSTRequest:request withParameters:[NSArray arrayWithObjects:usernameP, nil]];
-}
-
 - (id)testService {
     NSURL *baseURL = [NSURL URLWithString:url_help_test];
     OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
@@ -1405,75 +468,6 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     }
     
     return getBadRequestError();
-}
-
-- (id)getHomeTimelineSinceID:(NSString *)sinceID count:(int)count {
-    
-    if (count == 0) {
-        return nil;
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_statuses_home_timeline];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *countParam = [OARequestParameter requestParameterWithName:@"count" value:[NSString stringWithFormat:@"%d", count]];
-    
-    NSMutableArray *params = [NSMutableArray arrayWithObjects:countParam, nil];
-    
-    if (sinceID.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"since_id" value:sinceID]];
-    }
-    
-    return [self sendGETRequest:request withParameters:params];
-}
-
-- (NSError *)postTweet:(NSString *)tweetString inReplyTo:(NSString *)inReplyToString
-{
-    return [self postTweet:tweetString inReplyTo:inReplyToString location:nil placeId:nil];
-}
-
-- (NSError *)postTweet:(NSString *)tweetString inReplyTo:(NSString *)inReplyToString location:(CLLocation *)location placeId:(NSString *)placeId{
-    
-    if (tweetString.length == 0) {
-        return getBadRequestError();
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:url_statuses_update];
-    OARequestParameter *status = [OARequestParameter requestParameterWithName:@"status" value:[tweetString fhs_trimForTwitter]];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    
-    NSMutableArray *params = [NSMutableArray arrayWithObjects:status, nil];
-    
-    if (inReplyToString.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"in_reply_to_status_id" value:inReplyToString]];
-    }
-    
-    if (location) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"lat" value:[@(location.coordinate.latitude) description]]];
-        [params addObject:[OARequestParameter requestParameterWithName:@"long" value:[@(location.coordinate.longitude) description]]];
-        [params addObject:[OARequestParameter requestParameterWithName:@"display_coordinates" value:@"true"]];
-    }
-    
-    return [self sendPOSTRequest:request withParameters:params];
-}
-
-- (NSError *)postTweet:(NSString *)tweetString {
-    return [self postTweet:tweetString inReplyTo:nil];
-}
-
-- (id)getFollowersIDs {
-    NSURL *baseURL = [NSURL URLWithString:url_followers_ids];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *param = [OARequestParameter requestParameterWithName:@"screen_name" value:self.loggedInUsername];
-    OARequestParameter *stringify_ids = [OARequestParameter requestParameterWithName:@"stringify_ids" value:@"true"];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:param, stringify_ids, nil]];
-}
-
-- (id)getFriendsIDs {
-    NSURL *baseURL = [NSURL URLWithString:url_friends_ids];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-    OARequestParameter *param = [OARequestParameter requestParameterWithName:@"screen_name" value:self.loggedInUsername];
-    OARequestParameter *stringify_ids = [OARequestParameter requestParameterWithName:@"stringify_ids" value:@"true"];
-    return [self sendGETRequest:request withParameters:[NSArray arrayWithObjects:param, stringify_ids, nil]];
 }
 
 - (id)init {
@@ -1567,50 +561,60 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     return reqStrs;
 }
 
-//
-// XAuth
-//
-
-- (NSError *)getXAuthAccessTokenForUsername:(NSString *)username password:(NSString *)password {
-    
-    if (password.length == 0) {
-        return [NSError errorWithDomain:@"Bad Request: The request you are trying to make is missing parameters." code:400 userInfo:nil];
+- (void)sendPOSTRequest:(OAMutableURLRequest *)request
+         withParameters:(NSArray *)params
+                success:(void (^)(id responseObj))success
+                failure:(void (^)(NSError *error))failure
+               progress:(void (^)(double progress))progress
+{
+    if (![self isAuthorized]) {
+        [self loadAccessToken];
+        if (![self isAuthorized]) {
+            failure([NSError errorWithDomain:@"You are not authorized via OAuth" code:401 userInfo:[NSDictionary dictionaryWithObject:request forKey:@"request"]]);
+        }
     }
     
-    if (username.length == 0) {
-        return [NSError errorWithDomain:@"Bad Request: The request you are trying to make is missing parameters." code:400 userInfo:nil];
-    }
-    
-    NSURL *baseURL = [NSURL URLWithString:@"https://api.twitter.com/oauth/access_token"];
-	OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:nil];
-    OARequestParameter *x_auth_mode = [OARequestParameter requestParameterWithName:@"x_auth_mode" value:@"client_auth"];
-    OARequestParameter *x_auth_username = [OARequestParameter requestParameterWithName:@"x_auth_username" value:username];
-    OARequestParameter *x_auth_password = [OARequestParameter requestParameterWithName:@"x_auth_password" value:password];
-	[request setHTTPMethod:@"POST"];
-    
-	[request setParameters:[NSArray arrayWithObjects:x_auth_mode, x_auth_username, x_auth_password, nil]];
+    [request setHTTPMethod:@"POST"];
+    [request setParameters:params];
     [request prepare];
     
-    if (self.shouldClearConsumer) {
-        self.shouldClearConsumer = NO;
-        self.consumer = nil;
-    }
-    
-    id ret = [self sendRequest:request];
-    
-    if ([ret isKindOfClass:[NSError class]]) {
-        return ret;
-    }
-    
-    NSString *httpBody = [[[NSString alloc]initWithData:(NSData *)ret encoding:NSUTF8StringEncoding]autorelease];
-    
-    if (httpBody.length > 0) {
-        [self storeAccessToken:httpBody];
-    } else {
-        [self storeAccessToken:nil];
-        return [NSError errorWithDomain:@"Twitter messed up and did not return anything for some reason. Please try again later." code:500 userInfo:nil];
-    }
-    return nil;
+    [self sendRequest:request success:success failure:failure progress:progress];
+}
+
+
+- (void)sendRequest:(NSURLRequest *)request
+            success:(void (^)(id responseObj))success
+            failure:(void (^)(NSError *error))failure
+           progress:(void (^)(double progress))progress
+{
+    AFHTTPRequestOperation *operation = [[AFHTTPRequestOperation alloc] initWithRequest:request];
+    [operation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
+        success(responseObject);
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        failure(error);
+    }];
+    [operation setUploadProgressBlock:^(NSUInteger bytesWritten, long long totalBytesWritten, long long totalBytesExpectedToWrite) {
+        double uploadProgress = totalBytesWritten/(double)totalBytesExpectedToWrite;
+        if ([request.HTTPMethod isEqualToString:@"GET"]) {
+            progress(uploadProgress * 1 / 3);
+        } else {
+            progress(uploadProgress * 2 / 3);
+        }
+    }];
+    [operation setDownloadProgressBlock:^(NSUInteger bytesRead, long long totalBytesRead, long long totalBytesExpectedToRead) {
+        double downloadProgress;
+        if (totalBytesExpectedToRead > 0) {
+            downloadProgress = totalBytesRead/(double)totalBytesExpectedToRead;
+        } else {
+            downloadProgress = 1;
+        }
+        if ([request.HTTPMethod isEqualToString:@"GET"]) {
+            progress(downloadProgress * 2 / 3 + 1 / 3.0);
+        } else {
+            progress(downloadProgress * 1 / 3 + 2 / 3.0);
+        }
+    }];
+    [operation start];
 }
 
 //
@@ -2129,6 +1133,18 @@ static NSString * const oldPinJS = @"var d = document.getElementById('oauth-pin'
 
 - (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
     
+    if ([request.URL.absoluteString hasPrefix:@"https://mobile.twitter.com/signup"]) { // 关闭注册功能
+        if (![NSLocalizedString(@"OK", nil) isEqualToString:@"OK"]) {
+            UIAlertView *alert = [[UIAlertView alloc]
+                                  initWithTitle:NSLocalizedString(@"注册功能已关闭", nil)
+                                  message:NSLocalizedString(@"近期由于twitter的注册校验码难以辨认，导致App Store中出现大量差评。对此@tuoxie007也一筹莫展，无奈只有关闭注册功能。\n\n如果你确实需要注册功能，请对着手机发誓，不会因此在App Store中发表差评，然后将系统切换至英文再回来。", nil)
+                                  delegate:self
+                                  cancelButtonTitle:NSLocalizedString(@"OK", nil)
+                                  otherButtonTitles:nil, nil];
+            [alert show];
+            return NO;
+        }
+    }
     if (strstr([request.URL.absoluteString UTF8String], "denied=")) {
 		[self dismissViewControllerAnimated:YES completion:nil];
         return NO;
