@@ -99,6 +99,7 @@ extern NSString * const FHSProfileDescriptionKey;
 
 - (void)storeAccessToken:(NSString *)accessToken;
 - (NSString *)loadAccessToken;
+- (NSString *)loadAccessTokenWithScreenName:(NSString *)screenName;
 
 @end
 
@@ -108,253 +109,51 @@ extern NSString * const FHSProfileDescriptionKey;
 
 @interface FHSTwitterEngine : NSObject <UIWebViewDelegate>
 
-//
-// REST API
-//
-
-// statuses/update
-- (NSError *)postTweet:(NSString *)tweetString;
-- (NSError *)postTweet:(NSString *)tweetString inReplyTo:(NSString *)inReplyToString;
-
-// statuses/home_timeline
-- (id)getHomeTimelineSinceID:(NSString *)sinceID count:(int)count;
-
-// help/test
-- (id)testService;
-
-// blocks/create
-- (NSError *)block:(NSString *)username;
-
-// blocks/destroy
-- (NSError *)unblock:(NSString *)username;
-
-// users/lookup
-- (id)lookupUsers:(NSArray *)users areIDs:(BOOL)areIDs;
-
-// users/search
-- (id)searchUsersWithQuery:(NSString *)q andCount:(int)count;
-
-// account/update_profile_image
-- (NSError *)setProfileImageWithImageAtPath:(NSString *)file;
-- (NSError *)setProfileImageWithImageData:(NSData *)data;
-
-// account/settings GET and POST
-// See FHSTwitterEngine.m For details
-- (id)getUserSettings;
-- (NSError *)updateSettingsWithDictionary:(NSDictionary *)settings;
-
-// account/update_profile
-// See FHSTwitterEngine.m for details
-- (NSError *)updateUserProfileWithDictionary:(NSDictionary *)settings;
-
-// account/update_profile_background_image
+- (NSDictionary *)postTweet:(NSString *)tweetString
+                 imagePaths:(NSArray *)imagePaths
+                  inReplyTo:(NSString *)irt
+                   location:(CLLocation *)location
+                    placeId:(NSString *)placeId
+                 screenName:(NSString *)screenName;
+- (NSError *)setUseProfileBackgroundImage:(BOOL)shouldUseBGImg;
+- (NSError *)setBannerImageWithImageData:(NSData *)data;
 - (NSError *)setProfileBackgroundImageWithImageData:(NSData *)data tiled:(BOOL)isTiled;
 - (NSError *)setProfileBackgroundImageWithImageAtPath:(NSString *)file tiled:(BOOL)isTiled;
-- (NSError *)setUseProfileBackgroundImage:(BOOL)shouldUseProfileBackgroundImage;
-- (NSError *)setBannerImageWithImageData:(NSData *)data;
-
-// account/update_profile_colors
-// See FHSTwitterEngine.m for details
-// If the dictionary is nil, FHSTwitterEngine resets the values
-- (NSError *)updateProfileColorsWithDictionary:(NSDictionary *)dictionary;
-
-// account/rate_limit_status
-- (id)getRateLimitStatus;
-
-// favorites/create, favorites/destroy
-- (NSError *)markTweet:(NSString *)tweetID asFavorite:(BOOL)flag;
-
-// favorites/list
-- (id)getFavoritesForUser:(NSString *)user isID:(BOOL)isID andCount:(int)count;
-- (id)getFavoritesForUser:(NSString *)user isID:(BOOL)isID andCount:(int)count sinceID:(NSString *)sinceID maxID:(NSString *)maxID;
-
-// account/verify_credentials
-- (id)verifyCredentials;
-
-// friendships/create
-- (NSError *)followUser:(NSString *)user isID:(BOOL)isID;
-
-// friendships/destroy
-- (NSError *)unfollowUser:(NSString *)user isID:(BOOL)isID;
-
-// friendships/lookup
-- (id)lookupFriendshipStatusForUsers:(NSArray *)users areIDs:(BOOL)areIDs;
-
-// friendships/incoming
-- (id)getPendingIncomingFollowers;
-
-// friendships/outgoing
-- (id)getPendingOutgoingFollowers;
-
-// friendships/update
-- (NSError *)enableRetweets:(BOOL)enableRTs andDeviceNotifs:(BOOL)devNotifs forUser:(NSString *)user isID:(BOOL)isID;
-
-// friendships/no_retweet_ids
-- (id)getNoRetweetIDs;
-
-// help/tos
-- (id)getTermsOfService;
-
-// help/privacy
-- (id)getPrivacyPolicy;
-
-// direct_messages
-- (id)getDirectMessages:(int)count;
-
-// direct_messages/destroy
-- (NSError *)deleteDirectMessage:(NSString *)messageID;
-
-// direct_messages/sent
-- (id)getSentDirectMessages:(int)count;
-
-// direct_messages/new
-- (NSError *)sendDirectMessage:(NSString *)body toUser:(NSString *)user isID:(BOOL)isID;
-
-// direct_messages/show
-- (id)showDirectMessage:(NSString *)messageID;
-
-// users/report_spam
-- (NSError *)reportUserAsSpam:(NSString *)user isID:(BOOL)isID;
-
-// help/configuration
-- (id)getConfiguration;
-
-// help/languages
-- (id)getLanguages;
-
-// blocks/blocking/ids
-- (id)listBlockedIDs;
-
-// blocks/blocking
-- (id)listBlockedUsers;
-
-// blocks/exists
-- (id)authenticatedUserIsBlocking:(NSString *)user isID:(BOOL)isID;
-
-// users/profile_image
-- (id)getProfileImageForUsername:(NSString *)username andSize:(FHSTwitterEngineImageSize)size;
-
-// statuses/user_timeline
-- (id)getTimelineForUser:(NSString *)user isID:(BOOL)isID count:(int)count;
-- (id)getTimelineForUser:(NSString *)user isID:(BOOL)isID count:(int)count sinceID:(NSString *)sinceID maxID:(NSString *)maxID;
-
-// statuses/retweet
-- (NSError *)retweet:(NSString *)identifier;
-
-// statuses/oembed
-- (id)oembedTweet:(NSString *)identifier maxWidth:(float)maxWidth alignmentMode:(FHSTwitterEngineAlignMode)alignmentMode;
-
-// statuses/show
-- (id)getDetailsForTweet:(NSString *)identifier;
-
-// statuses/destroy
-- (NSError *)destroyTweet:(NSString *)identifier;
-
-// statuses/update_with_media
-- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData;
-- (NSError *)postTweet:(NSString *)tweetString withImageData:(NSData *)theData inReplyTo:(NSString *)irt location:(CLLocation *)location placeId:(NSString *)placeId;
-
-// statuses/mentions_timeline
-- (id)getMentionsTimelineWithCount:(int)count;
-- (id)getMentionsTimelineWithCount:(int)count sinceID:(NSString *)sinceID maxID:(NSString *)maxID;
-
-// statuses/retweets_of_me
-- (id)getRetweetedTimelineWithCount:(int)count;
-- (id)getRetweetedTimelineWithCount:(int)count sinceID:(NSString *)sinceID maxID:(NSString *)maxID;
-
-// statuses/retweets
-- (id)getRetweetsForTweet:(NSString *)identifier count:(int)count;
-
-// lists/list
-- (id)getListsForUser:(NSString *)user isID:(BOOL)isID;
-
-// lists/statuses
-- (id)getTimelineForListWithID:(NSString *)listID count:(int)count;
-- (id)getTimelineForListWithID:(NSString *)listID count:(int)count sinceID:(NSString *)sinceID maxID:(NSString *)maxID;
-- (id)getTimelineForListWithID:(NSString *)listID count:(int)count excludeRetweets:(BOOL)excludeRetweets excludeReplies:(BOOL)excludeReplies;
-- (id)getTimelineForListWithID:(NSString *)listID count:(int)count sinceID:(NSString *)sinceID maxID:(NSString *)maxID excludeRetweets:(BOOL)excludeRetweets excludeReplies:(BOOL)excludeReplies;
-
-// lists/members/create_all
-- (NSError *)addUsersToListWithID:(NSString *)listID users:(NSArray *)users;
-
-// lists/members/destroy_all
-- (NSError *)removeUsersFromListWithID:(NSString *)listID users:(NSArray *)users;
-
-// lists/members
-- (id)listUsersInListWithID:(NSString *)listID;
-
-// lists/update
-- (NSError *)setModeOfListWithID:(NSString *)listID toPrivate:(BOOL)isPrivate;
-- (NSError *)changeNameOfListWithID:(NSString *)listID toName:(NSString *)newName;
-- (NSError *)changeDescriptionOfListWithID:(NSString *)listID toDescription:(NSString *)newName;
-
-// lists/show
-- (id)getListWithID:(NSString *)listID;
-
-// lists/create
-- (NSError *)createListWithName:(NSString *)name isPrivate:(BOOL)isPrivate description:(NSString *)description;
-
-// tweets/search
-- (id)searchTweetsWithQuery:(NSString *)q count:(int)count resultType:(FHSTwitterEngineResultType)resultType unil:(NSDate *)untilDate sinceID:(NSString *)sinceID maxID:(NSString *)maxID;
-
-// followers/ids
-- (id)getFollowersIDs;
-
-// followers/list
-- (id)listFollowersForUser:(NSString *)user isID:(BOOL)isID withCursor:(NSString *)cursor;
-
-// friends/ids
-- (id)getFriendsIDs;
-
-// friends/list
-- (id)listFriendsForUser:(NSString *)user isID:(BOOL)isID withCursor:(NSString *)cursor;
-
-//
-// Login and Auth
-//
-
-// XAuth login
-- (NSError *)getXAuthAccessTokenForUsername:(NSString *)username password:(NSString *)password;
-
-// OAuth login
-- (void)showOAuthLoginControllerFromViewController:(UIViewController *)sender;
-- (void)showOAuthLoginControllerFromViewController:(UIViewController *)sender withCompletion:(void(^)(BOOL success))completionBlock;
-
-// Access Token Mangement
-- (void)clearAccessToken;
-- (void)loadAccessToken;
-- (BOOL)isAuthorized;
-
-// Clear Keys
-- (void)clearConsumer;
-
-// sendRequest methods, use these for every request
+- (NSError *)setProfileImageWithImageData:(NSData *)data;
+- (NSError *)setProfileImageWithImageAtPath:(NSString *)file;
+- (NSError *)updateUserProfileWithDictionary:(NSDictionary *)settings;
++ (FHSTwitterEngine *)sharedEngine;
+- (NSArray *)generateRequestStringsFromArray:(NSArray *)array;
+- (void)sendPOSTRequest:(OAMutableURLRequest *)request
+         withParameters:(NSArray *)params
+                success:(void (^)(id responseObj))success
+                failure:(void (^)(NSError *error))failure
+               progress:(void (^)(double progress))progress;
+- (void)sendRequest:(NSURLRequest *)request
+            success:(void (^)(id responseObj))success
+            failure:(void (^)(NSError *error))failure
+           progress:(void (^)(double progress))progress;- (id)sendRequest:(NSURLRequest *)request;
+- (id)manuallySendPOSTRequest:(OAMutableURLRequest *)request;
 - (id)sendPOSTRequest:(OAMutableURLRequest *)request withParameters:(NSArray *)params;
 - (id)sendGETRequest:(OAMutableURLRequest *)request withParameters:(NSArray *)params;
-
+- (NSString *)getRequestTokenString;
+- (BOOL)finishAuthWithRequestToken:(OAToken *)reqToken;
 //
-// Misc Methods
+// Access Token Management
 //
 
-// Date parser
+- (void)loadAccessToken;
+- (void)storeAccessToken:(NSString *)accessTokenZ;
+- (NSString *)extractValueForKey:(NSString *)target fromHTTPBody:(NSString *)body;
+- (BOOL)isAuthorized;
+- (void)clearAccessToken;
 - (NSDate *)getDateFromTwitterCreatedAt:(NSString *)twitterDate;
-
-// id list generator - returns an array of id/username list strings
-- (NSArray *)generateRequestStringsFromArray:(NSArray *)array;
-
-// Temporaryily set keys
-// if you don't want your keys in memory, simply use
-// this method. You will have to use it before
-// making any API calls.
-- (void)temporarilySetConsumerKey:(NSString *)consumerKey andSecret:(NSString *)consumerSecret;
-
-// Use to set the consumer key when using the singleton
+- (void)clearConsumer;
 - (void)permanentlySetConsumerKey:(NSString *)consumerKey andSecret:(NSString *)consumerSecret;
+- (void)temporarilySetConsumerKey:(NSString *)consumerKey andSecret:(NSString *)consumerSecret;
+- (void)showOAuthLoginControllerFromViewController:(UIViewController *)sender;
+- (void)showOAuthLoginControllerFromViewController:(UIViewController *)sender withCompletion:(void(^)(int success))block;
 
-// Singleton, NEVER use the -init method. Ever.
-+ (FHSTwitterEngine *)sharedEngine;
-
-// Determines your internet status
 + (BOOL)isConnectedToInternet;
 
 // Determines if entities should be included

@@ -151,195 +151,111 @@ NSError * getNilReturnLengthError() {
 
 @implementation FHSTwitterEngine
 
-static NSString * const url_search_tweets = @"https://api.twitter.com/1.1/search/tweets.json";
-
-static NSString * const url_users_search = @"https://api.twitter.com/1.1/users/search.json";
-static NSString * const url_users_show = @"https://api.twitter.com/1.1/users/show.json";
-static NSString * const url_users_report_spam = @"https://api.twitter.com/1.1/users/report_spam.json";
-static NSString * const url_users_lookup = @"https://api.twitter.com/1.1/users/lookup.json";
-
-static NSString * const url_lists_create = @"https://api.twitter.com/1.1/lists/create.json";
-static NSString * const url_lists_show = @"https://api.twitter.com/1.1/lists/show.json";
-static NSString * const url_lists_update = @"https://api.twitter.com/1.1/lists/update.json";
-static NSString * const url_lists_members = @"https://api.twitter.com/1.1/lists/members.json";
-static NSString * const url_lists_members_destroy_all = @"https://api.twitter.com/1.1/lists/members/destroy_all.json";
-static NSString * const url_lists_members_create_all = @"https://api.twitter.com/1.1/lists/members/create_all.json";
-static NSString * const url_lists_statuses = @"https://api.twitter.com/1.1/lists/statuses.json";
-static NSString * const url_lists_list = @"https://api.twitter.com/1.1/lists/list.json";
-
-static NSString * const url_statuses_home_timeline = @"https://api.twitter.com/1.1/statuses/home_timeline.json";
 static NSString * const url_statuses_update = @"https://api.twitter.com/1.1/statuses/update.json";
-static NSString * const url_statuses_retweets_of_me = @"https://api.twitter.com/1.1/statuses/retweets_of_me.json";
-static NSString * const url_statuses_user_timeline = @"https://api.twitter.com/1.1/statuses/user_timeline.json";
-static NSString * const url_statuses_metions_timeline = @"https://api.twitter.com/1.1/statuses/mentions_timeline.json";
-static NSString * const url_statuses_update_with_media = @"https://api.twitter.com/1.1/statuses/update_with_media.json";
-static NSString * const url_statuses_destroy = @"https://api.twitter.com/1.1/statuses/destroy.json";
-static NSString * const url_statuses_show = @"https://api.twitter.com/1.1/statuses/show.json";
-static NSString * const url_statuses_oembed = @"https://api.twitter.com/1.1/statuses/oembed.json";
-
-static NSString * const url_blocks_exists = @"https://api.twitter.com/1.1/blocks/exists.json";
-static NSString * const url_blocks_blocking = @"https://api.twitter.com/1.1/blocks/blocking.json";
-static NSString * const url_blocks_blocking_ids = @"https://api.twitter.com/1.1/blocks/blocking/ids.json";
-static NSString * const url_blocks_destroy = @"https://api.twitter.com/1.1/blocks/destroy.json";
-static NSString * const url_blocks_create = @"https://api.twitter.com/1.1/blocks/create.json";
-
-static NSString * const url_help_languages = @"https://api.twitter.com/1.1/help/languages.json";
-static NSString * const url_help_configuration = @"https://api.twitter.com/1.1/help/configuration.json";
-static NSString * const url_help_privacy = @"https://api.twitter.com/1.1/help/privacy.json";
-static NSString * const url_help_tos = @"https://api.twitter.com/1.1/help/tos.json";
+//static NSString * const url_statuses_update_with_media = @"https://api.twitter.com/1.1/statuses/update_with_media.json";
+static NSString * const url_media_upload = @"https://upload.twitter.com/1.1/media/upload.json";
 static NSString * const url_help_test = @"https://api.twitter.com/1.1/help/test.json";
-
-static NSString * const url_direct_messages_show = @"https://api.twitter.com/1.1/direct_messages/show.json";
-static NSString * const url_direct_messages_new = @"https://api.twitter.com/1.1/direct_messages/new.json";
-static NSString * const url_direct_messages_sent = @"https://api.twitter.com/1.1/direct_messages/sent.json";
-static NSString * const url_direct_messages_destroy = @"https://api.twitter.com/1.1/direct_messages/destroy.json";
-static NSString * const url_direct_messages = @"https://api.twitter.com/1.1/direct_messages.json";
-
-static NSString * const url_friendships_no_retweets_ids = @"https://api.twitter.com/1.1/friendships/no_retweets/ids.json";
-static NSString * const url_friendships_update = @"https://api.twitter.com/1.1/friendships/update.json";
-static NSString * const url_friendships_outgoing = @"https://api.twitter.com/1.1/friendships/outgoing.json";
-static NSString * const url_friendships_incoming = @"https://api.twitter.com/1.1/friendships/incoming.json";
-static NSString * const url_friendships_lookup = @"https://api.twitter.com/1.1/friendships/lookup.json";
-static NSString * const url_friendships_destroy = @"https://api.twitter.com/1.1/friendships/destroy.json";
-static NSString * const url_friendships_create = @"https://api.twitter.com/1.1/friendships/create.json";
-
-static NSString * const url_account_verify_credentials = @"https://api.twitter.com/1.1/account/verify_credentials.json";
-static NSString * const url_account_update_profile_colors = @"https://api.twitter.com/1.1/account/update_profile_colors.json";
 static NSString * const url_account_update_profile_background_image = @"https://api.twitter.com/1.1/account/update_profile_background_image.json";
 static NSString * const url_account_update_profile_image = @"https://api.twitter.com/1.1/account/update_profile_image.json";
-static NSString * const url_account_settings = @"https://api.twitter.com/1.1/account/settings.json";
 static NSString * const url_account_update_profile = @"https://api.twitter.com/1.1/account/update_profile.json";
 static NSString * const url_account_update_profile_banner = @"https://api.twitter.com/1.1/account/update_profile_banner.json";
 
-static NSString * const url_favorites_list = @"https://api.twitter.com/1.1/favorites/list.json";
-static NSString * const url_favorites_create = @"https://api.twitter.com/1.1/favorites/create.json";
-static NSString * const url_favorites_destroy = @"https://api.twitter.com/1.1/favorites/destroy.json";
-
-static NSString * const url_application_rate_limit_status = @"https://api.twitter.com/1.1/application/rate_limit_status.json";
-
-static NSString * const url_followers_ids = @"https://api.twitter.com/1.1/followers/ids.json";
-static NSString * const url_followers_list = @"https://api.twitter.com/1.1/followers/list.json";
-
-static NSString * const url_friends_ids = @"https://api.twitter.com/1.1/friends/ids.json";
-static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends/list.json";
-
-- (void)postTweet:(NSString *)tweetString
-        inReplyTo:(NSString *)inReplyToString
+- (NSDictionary *)postTweet:(NSString *)tweetString
+       imagePaths:(NSArray *)imagePaths
+        inReplyTo:(NSString *)irt
          location:(CLLocation *)location
           placeId:(NSString *)placeId
-          success:(void (^)(id responseObj))success
-          failure:(void (^)(NSError *error))failure
-         progress:(void (^)(double progress))progress
+       screenName:(NSString *)screenName
 {
-    if (tweetString.length == 0) {
-        failure(getBadRequestError());
+    if (tweetString.length == 0 && imagePaths.count == 0) {
+        return nil;
     }
     
-    NSURL *baseURL = [NSURL URLWithString:url_statuses_update];
+    NSURL *baseURL = [NSURL URLWithString:url_media_upload];
+    
+    NSMutableArray *imageIdStrs = @[].mutableCopy;
+    for (NSString *imageFilePath in imagePaths) {
+        NSData *imageData = UIImageJPEGRepresentation([UIImage imageWithContentsOfFile:imageFilePath], 0.92);
+        OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:[self accessTokenWithScreenName:screenName]];
+        
+        CFUUIDRef theUUID = CFUUIDCreate(nil);
+        CFStringRef string = CFUUIDCreateString(nil, theUUID);
+        CFRelease(theUUID);
+        NSString *boundary = [NSString stringWithString:(NSString *)string];
+        CFRelease(string);
+        
+        [request setHTTPMethod:@"POST"];
+        [request setHTTPShouldHandleCookies:NO];
+        
+        NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@",boundary];
+        [request setValue:contentType forHTTPHeaderField:@"content-type"];
+        
+        NSMutableData *body = [NSMutableData dataWithLength:0];
+        [body appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[@"Content-Disposition: form-data; name=\"media\"; filename=\"upload.jpg\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[@"Content-Type: image/jpeg\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:imageData];
+        [body appendData:[[NSString stringWithFormat:@"\r\n--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+        
+        [request prepare];
+        [request setHTTPBody:body];
+        
+        NSURLResponse *response;
+        NSError *error;
+        NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+        if (data) {
+            id parsedJSONResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+            if ([parsedJSONResponse isKindOfClass:[NSDictionary class]]) {
+                NSDictionary *media = parsedJSONResponse;
+                NSString *mediaIdStr = media[@"media_id_string"];
+                [imageIdStrs addObject:mediaIdStr];
+            }
+            CGFloat progress = ([imagePaths indexOfObject:imageFilePath] + 1) * 1.0 / imagePaths.count * 0.8 + 0.1;
+            dispatch_async(GCDMainThread, ^{
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"HSUPostTweetProgressChangedNotification"
+                                                                    object:@(progress)];
+            });
+        } else {
+            return nil;
+        }
+    }
+    
+    baseURL = [NSURL URLWithString:url_statuses_update];
     OARequestParameter *status = [OARequestParameter requestParameterWithName:@"status" value:[tweetString fhs_trimForTwitter]];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
+    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:[self accessTokenWithScreenName:screenName]];
     
     NSMutableArray *params = [NSMutableArray arrayWithObjects:status, nil];
     
-    if (inReplyToString.length > 0) {
-        [params addObject:[OARequestParameter requestParameterWithName:@"in_reply_to_status_id" value:inReplyToString]];
+    if (irt.length > 0) {
+        [params addObject:[OARequestParameter requestParameterWithName:@"in_reply_to_status_id" value:irt]];
     }
     
     if (location) {
         [params addObject:[OARequestParameter requestParameterWithName:@"lat" value:[@(location.coordinate.latitude) description]]];
         [params addObject:[OARequestParameter requestParameterWithName:@"long" value:[@(location.coordinate.longitude) description]]];
+        if (placeId) {
+            [params addObject:[OARequestParameter requestParameterWithName:@"place_id" value:placeId]];
+        }
         [params addObject:[OARequestParameter requestParameterWithName:@"display_coordinates" value:@"true"]];
     }
     
-    [self sendPOSTRequest:request withParameters:params success:success failure:failure progress:progress];
-}
-
-- (void)postTweet:(NSString *)tweetString
-    withImageData:(NSData *)theData
-        inReplyTo:(NSString *)irt
-         location:(CLLocation *)location
-          placeId:(NSString *)placeId
-          success:(void (^)(id responseObj))success
-          failure:(void (^)(NSError *error))failure
-         progress:(void (^)(double progress))progress
-{
-    if (tweetString.length == 0 && theData.length == 0) {
-        failure(getBadRequestError());
-        return;
+    if (imageIdStrs.count) {
+        NSString *mediaIdStr = [imageIdStrs componentsJoinedByString:@","];
+        [params addObject:[OARequestParameter requestParameterWithName:@"media_ids" value:mediaIdStr]];
     }
-    
-    if (theData.length == 0) {
-        [self postTweet:tweetString inReplyTo:irt location:location placeId:placeId success:success failure:failure progress:progress];
-        return;
-    }
-
-    NSURL *baseURL = [NSURL URLWithString:url_statuses_update_with_media];
-    OAMutableURLRequest *request = [OAMutableURLRequest requestWithURL:baseURL consumer:self.consumer token:self.accessToken];
-
-    CFUUIDRef theUUID = CFUUIDCreate(nil);
-    CFStringRef string = CFUUIDCreateString(nil, theUUID);
-    CFRelease(theUUID);
-    NSString *boundary = [NSString stringWithString:(NSString *)string];
-    CFRelease(string);
-    
     [request setHTTPMethod:@"POST"];
-    [request setHTTPShouldHandleCookies:NO];
-    
-    NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@",boundary];
-    [request setValue:contentType forHTTPHeaderField:@"content-type"];
-    
-    NSMutableData *body = [NSMutableData dataWithLength:0];
-    [body appendData:[[NSString stringWithFormat:@"--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    [body appendData:[@"Content-Disposition: form-data; name=\"media[]\"; filename=\"upload.jpg\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-    [body appendData:[@"Content-Type: application/octet-stream\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-    [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-    [body appendData:theData];
-    [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    [body appendData:[@"Content-Disposition: form-data; name=\"status\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-    [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-    [body appendData:[[NSString stringWithFormat:@"%@\r\n",tweetString]dataUsingEncoding:NSUTF8StringEncoding]];
-    [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    
-    if (irt.length > 0) {
-        [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[@"Content-Disposition: form-data; name=\"in_reply_to_status_id\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"%@\r\n",irt]dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    }
-    
-    if (location.coordinate.latitude || location.coordinate.longitude) {
-        [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[@"Content-Disposition: form-data; name=\"lat\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"%g\r\n",location.coordinate.latitude]dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-        
-        [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[@"Content-Disposition: form-data; name=\"long\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"%g\r\n",location.coordinate.longitude]dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-        
-        [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[@"Content-Disposition: form-data; name=\"display_coordinates\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"%@\r\n",@"true"]dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    }
-    
-    if (placeId) {
-        [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[@"Content-Disposition: form-data; name=\"place_id\"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"%@\r\n",placeId]dataUsingEncoding:NSUTF8StringEncoding]];
-        [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    }
-    
+    [request setParameters:params];
     [request prepare];
-    [request setHTTPBody:body];
     
-    [self sendRequest:request success:success failure:failure progress:progress];
+    NSURLResponse *response;
+    NSError *error;
+    NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+    if (data) {
+        id parsedJSONResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+        return parsedJSONResponse;
+    }
+    return nil;
 }
 
 - (NSError *)setUseProfileBackgroundImage:(BOOL)shouldUseBGImg {
@@ -591,6 +507,7 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     [operation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
         success(responseObject);
     } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        progress(0);
         failure(error);
     }];
     [operation setUploadProgressBlock:^(NSUInteger bytesWritten, long long totalBytesWritten, long long totalBytesExpectedToWrite) {
@@ -634,6 +551,17 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
     
     if (error) {
+        if (data) {
+            NSDictionary *responseObj = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+            if (responseObj) {
+                if (responseObj[@"errors"] && [responseObj[@"errors"] count] > 0) {
+                    if ([responseObj[@"errors"][0][@"code"] intValue] == 32) {
+                        return [NSError errorWithDomain:@"API Error" code:32 userInfo:responseObj];
+                    }
+                }
+            }
+        }
+        
         return error;
     }
     
@@ -812,6 +740,15 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     self.loggedInID = [self extractValueForKey:@"user_id" fromHTTPBody:savedHttpBody];
 }
 
+- (OAToken *)accessTokenWithScreenName:(NSString *)screenName
+{
+    if (screenName) {
+        NSString *savedHttpBody = [self.delegate loadAccessTokenWithScreenName:screenName];
+        return [OAToken tokenWithHTTPResponseBody:savedHttpBody];
+    }
+    return self.accessToken;
+}
+
 - (void)storeAccessToken:(NSString *)accessTokenZ {
     self.accessToken = [OAToken tokenWithHTTPResponseBody:accessTokenZ];
     self.loggedInUsername = [self extractValueForKey:@"screen_name" fromHTTPBody:accessTokenZ];
@@ -896,7 +833,7 @@ static NSString * const url_friends_list = @"https://api.twitter.com/1.1/friends
     [self showOAuthLoginControllerFromViewController:sender withCompletion:nil];
 }
 
-- (void)showOAuthLoginControllerFromViewController:(UIViewController *)sender withCompletion:(void(^)(BOOL success))block {
+- (void)showOAuthLoginControllerFromViewController:(UIViewController *)sender withCompletion:(void(^)(int success))block {
     FHSTwitterEngineController *vc = [[[FHSTwitterEngineController alloc]init]autorelease];
     vc.modalTransitionStyle = UIModalTransitionStyleCoverVertical;
     objc_setAssociatedObject(authBlockKey, "FHSTwitterEngineOAuthCompletion", block, OBJC_ASSOCIATION_COPY_NONATOMIC);
@@ -1022,7 +959,15 @@ static NSString * const oldPinJS = @"var d = document.getElementById('oauth-pin'
         NSString *reqString = [[FHSTwitterEngine sharedEngine]getRequestTokenString];
         
         if (reqString.length == 0) {
-            [self dismissViewControllerAnimated:YES completion:nil];
+            dispatch_sync(GCDMainThread, ^{
+                void(^block)(BOOL success) = objc_getAssociatedObject(authBlockKey, "FHSTwitterEngineOAuthCompletion");
+                objc_removeAssociatedObjects(authBlockKey);
+                
+                if (block) {
+                    block(NO);
+                }
+                [self dismissViewControllerAnimated:YES completion:nil];
+            });
             [pool release];
             return;
         }
@@ -1134,16 +1079,14 @@ static NSString * const oldPinJS = @"var d = document.getElementById('oauth-pin'
 - (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
     
     if ([request.URL.absoluteString hasPrefix:@"https://mobile.twitter.com/signup"]) { // 关闭注册功能
-        if (![NSLocalizedString(@"OK", nil) isEqualToString:@"OK"]) {
-            UIAlertView *alert = [[UIAlertView alloc]
-                                  initWithTitle:NSLocalizedString(@"注册功能已关闭", nil)
-                                  message:NSLocalizedString(@"近期由于twitter的注册校验码难以辨认，导致App Store中出现大量差评。对此@tuoxie007也一筹莫展，无奈只有关闭注册功能。\n\n如果你确实需要注册功能，请对着手机发誓，不会因此在App Store中发表差评，然后将系统切换至英文再回来。", nil)
-                                  delegate:self
-                                  cancelButtonTitle:NSLocalizedString(@"OK", nil)
-                                  otherButtonTitles:nil, nil];
-            [alert show];
-            return NO;
-        }
+        UIAlertView *alert = [[UIAlertView alloc]
+                              initWithTitle:NSLocalizedString(@"注册功能已关闭", nil)
+                              message:NSLocalizedString(@"由于注册的人太多，twitter已关闭本应用所用代理的注册权限", nil)
+                              delegate:self
+                              cancelButtonTitle:NSLocalizedString(@"OK", nil)
+                              otherButtonTitles:nil, nil];
+        [alert show];
+        return NO;
     }
     if (strstr([request.URL.absoluteString UTF8String], "denied=")) {
 		[self dismissViewControllerAnimated:YES completion:nil];
@@ -1166,7 +1109,7 @@ static NSString * const oldPinJS = @"var d = document.getElementById('oauth-pin'
     objc_removeAssociatedObjects(authBlockKey);
     
     if (block) {
-        block(NO);
+        block(-1);
     }
     
     [self dismissViewControllerAnimated:YES completion:nil];
